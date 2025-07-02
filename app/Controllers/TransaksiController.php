@@ -5,6 +5,9 @@ namespace App\Controllers;
 use App\Models\TransactionModel;
 use App\Models\TransactionDetailModel;
 
+use App\Models\TambahDiskonModel;
+use App\Models\ProductModel;
+
 class TransaksiController extends BaseController
 {
     protected $cart;
@@ -33,12 +36,28 @@ class TransaksiController extends BaseController
 
     public function cart_add()
     {
+        $diskonModel = new TambahDiskonModel();
+        $tanggalHariIni = date('Y-m-d');
+
+        $diskon = $diskonModel->where('tanggal', $tanggalHariIni)->first();
+
+        $hargaAsli = $this->request->getPost('harga');
+        $hargaSetelahDiskon = $hargaAsli;
+
+        if($diskon){
+            $hargaSetelahDiskon = max(0, $hargaAsli - $diskon['nominal']);
+        }
+
+
         $this->cart->insert(array(
             'id'        => $this->request->getPost('id'),
             'qty'       => 1,
-            'price'     => $this->request->getPost('harga'),
+            'price'     => $hargaSetelahDiskon, ('harga'),
             'name'      => $this->request->getPost('nama'),
-            'options'   => array('foto' => $this->request->getPost('foto'))
+            'options'   => [
+                'foto'  => $this->request->getPost('foto'),
+                'diskon'=> $diskon['nominal'] ?? 0
+            ]
         ));
         session()->setflashdata('success', 'Produk berhasil ditambahkan ke keranjang. (<a href="' . base_url() . 'keranjang">Lihat</a>)');
         return redirect()->to(base_url('/'));
@@ -139,39 +158,54 @@ class TransaksiController extends BaseController
     }
 
     public function buy()
-{
-    if ($this->request->getPost()) { 
-        $dataForm = [
-            'username' => $this->request->getPost('username'),
-            'total_harga' => $this->request->getPost('total_harga'),
-            'alamat' => $this->request->getPost('alamat'),
-            'ongkir' => $this->request->getPost('ongkir'),
-            'status' => 0,
-            'created_at' => date("Y-m-d H:i:s"),
-            'updated_at' => date("Y-m-d H:i:s")
-        ];
+    {
+        if ($this->request->getPost()) {
+            $items = $this->cart->contents();
+            $total_harga = 0;
+            $total_diskon = 0;
 
-        $this->transaction->insert($dataForm);
+            foreach ($items as $item){
+                $qty = $item['qty'];
+                $harga = $item['price'];
+                $diskon = $item['options']['diskon'] ?? 0;
 
-        $last_insert_id = $this->transaction->getInsertID();
-
-        foreach ($this->cart->contents() as $value) {
-            $dataFormDetail = [
-                'transaction_id' => $last_insert_id,
-                'product_id' => $value['id'],
-                'jumlah' => $value['qty'],
-                'diskon' => 0,
-                'subtotal_harga' => $value['qty'] * $value['price'],
+                $total_harga += $harga * $qty;
+                $total_diskon += $diskon * $qty;
+            }
+            
+            $dataForm = [
+                'username' => $this->request->getPost('username'),
+                'total_harga' => $this->request->getPost('total_harga'),
+                'alamat' => $this->request->getPost('alamat'),
+                'ongkir' => $this->request->getPost('ongkir'),
+                'status' => 0,
                 'created_at' => date("Y-m-d H:i:s"),
                 'updated_at' => date("Y-m-d H:i:s")
             ];
 
-            $this->transaction_detail->insert($dataFormDetail);
-        }
+            $this->transaction->insert($dataForm);
 
-        $this->cart->destroy();
- 
-        return redirect()->to(base_url());
+            $last_insert_id = $this->transaction->getInsertID();
+
+            foreach ($this->cart->contents() as $value) {
+                $diskon = $item['options']['diskon'] ?? 0;
+
+                $dataFormDetail = [
+                    'transaction_id' => $last_insert_id,
+                    'product_id' => $value['id'],
+                    'jumlah' => $value['qty'],
+                    'diskon' => $diskon,
+                    'subtotal_harga' => $value['qty'] * $value['price'],
+                    'created_at' => date("Y-m-d H:i:s"),
+                    'updated_at' => date("Y-m-d H:i:s")
+                ];
+
+                $this->transaction_detail->insert($dataFormDetail);
+            }
+
+            $this->cart->destroy();
+    
+            return redirect()->to(base_url())->with('success','Pesanan Berhasil Dibuat!');
+        }
     }
-}
 }

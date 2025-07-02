@@ -29,6 +29,18 @@
         }
         ?>
 
+        <?php
+        if (session('role') == 'admin') {
+        ?>
+        <li class="nav-item">
+            <a class="nav-link <?php echo (uri_string() == 'admin/diskon') ? "" : "collapsed" ?>" href="diskon">
+                <i class="bi bi-receipt"></i>
+                <span>Diskon</span>
+            </a>
+        </li>
+        <?php
+        }
+        ?>
         <li class="nav-item">
             <a class="nav-link <?php echo (uri_string() == 'profile') ? "" : "collapsed" ?>" href="profile">
                 <i class="bi bi-person"></i>

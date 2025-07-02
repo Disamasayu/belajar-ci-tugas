@@ -26,11 +26,21 @@ if (session()->getFlashData('success')) {
     <tbody>
         <?php
         $i = 1;
+        $total_diskon = 0;
         if (!empty($items)) :
             foreach ($items as $index => $item) :
+                $diskon = isset($item['options']['diskon']) ? $item['options']['diskon'] : 0;
+                $subtotal_diskon = $diskon * $item['qty'];
+                $total_diskon += $subtotal_diskon;
         ?>
                 <tr>
                     <td><?php echo $item['name'] ?></td>
+                    <td>
+                        <?= number_to_currency($item['price'], 'IDR') ?>
+                        <?php if (isset($item['options']['diskon']) && $item['options']['diskon'] > 0): ?>
+                            <br><small class="text-danger">Diskon: Rp <?= number_format($item['options']['diskon']) ?></small>
+                        <?php endif; ?>
+                    </td>
                     <td><img src="<?php echo base_url() . "img/" . $item['options']['foto'] ?>" width="100px"></td>
                     <td><?php echo number_to_currency($item['price'], 'IDR') ?></td>
                     <td><input type="number" min="1" name="qty<?php echo $i++ ?>" class="form-control" value="<?php echo $item['qty'] ?>"></td>

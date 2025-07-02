@@ -16,6 +16,12 @@
       </form>
     </div><!-- End Search Bar -->
 
+    <?php if (session()->get('diskon')): ?>
+      <div class="w-100 rounded-pill text-center py-2" style="background-color:rgb(13, 145, 46); color:rgb(255, 255, 255); font-weight: bold;">
+        Diskon Hari Ini : Rp<?= number_format(session()->get('diskon'),0,',','.') ?>
+    </div>
+    <?php endif; ?>
+
     <nav class="header-nav ms-auto">
       <ul class="d-flex align-items-center">
 

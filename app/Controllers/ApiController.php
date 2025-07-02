@@ -30,6 +30,14 @@ class ApiController extends ResourceController
      */
     public function index()
     {
+        $model = new TransactionModel();
+        $data = $model->findAll();
+
+        return $this->respond([
+            'status'    => 200,
+            'results'   => $data
+        ]);
+
         $data = [ 
             'results' => [],
             'status' => ["code" => 401, "description" => "Unauthorized"]
@@ -46,13 +54,20 @@ class ApiController extends ResourceController
                 $penjualan = $this->transaction->findAll();
                 
                 foreach ($penjualan as &$pj) {
-                    $pj['details'] = $this->transaction_detail->where('transaction_id', $pj['id'])->findAll();
+                    $details = $this->transaction_detail->where('transaction_id', $pj['id'])->findAll();
                 }
 
-                $data['status'] = ["code" => 200, "description" => "OK"];
-                $data['results'] = $penjualan;
+                $jumlah_item = 0;
+                foreach ($details as $d){
+                    $jumlah_item += $d['jumlah'];
+                }
 
+                $pj['jumlah_item'] = $jumlah_item;
+                $pj['details'] = $details;
             }
+
+            $data['status'] = ["code" => 200, "description" => "OK"];
+            $data['results'] = $penjualan;
         } 
 
         return $this->respond($data);
